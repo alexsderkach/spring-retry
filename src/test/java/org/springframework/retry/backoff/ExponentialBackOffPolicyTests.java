@@ -62,7 +62,7 @@ public class ExponentialBackOffPolicyTests {
 		ExponentialBackOffPolicy strategy = new ExponentialBackOffPolicy();
 		strategy.setSleeper(sleeper);
 		BackOffContext context = strategy.start(null);
-		strategy.backOff(context);
+		strategy.getBackOffInMillis(context);
 		assertEquals(ExponentialBackOffPolicy.DEFAULT_INITIAL_INTERVAL, sleeper.getLastBackOff());
 	}
 
@@ -72,7 +72,7 @@ public class ExponentialBackOffPolicyTests {
 		strategy.setMaxInterval(50);
 		strategy.setSleeper(sleeper);
 		BackOffContext context = strategy.start(null);
-		strategy.backOff(context);
+		strategy.getBackOffInMillis(context);
 		assertEquals(50, sleeper.getLastBackOff());
 	}
 
@@ -86,7 +86,7 @@ public class ExponentialBackOffPolicyTests {
 		strategy.setSleeper(sleeper);
 		BackOffContext context = strategy.start(null);
 		for (int x = 0; x < 5; x++) {
-			strategy.backOff(context);
+			strategy.getBackOffInMillis(context);
 			assertEquals(seed, sleeper.getLastBackOff());
 			seed *= multiplier;
 		}

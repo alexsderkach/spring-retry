@@ -30,7 +30,7 @@ import org.springframework.retry.RetryContext;
  * and implementations can return an implementation-specific
  *
  * {@link BackOffContext} that can be used to track state through subsequent
- * back off invocations. Each back off process is handled via a call to {@link #backOff}.
+ * back off invocations. Each back off process is handled via a call to {@link #getBackOffInMillis}.
  *
  * The {@link org.springframework.retry.support.RetryTemplate} will pass in
  * the corresponding {@link BackOffContext} object created by the call to {@link #start}.
@@ -59,6 +59,6 @@ public interface BackOffPolicy {
 	 * interrupted.
 	 * @param backOffContext the {@link BackOffContext}
 	 */
-	void backOff(BackOffContext backOffContext) throws BackOffInterruptedException;
+	long getBackOffInMillis(BackOffContext backOffContext) throws BackOffInterruptedException;
 
 }

@@ -322,7 +322,7 @@ public class RetryTemplateTests {
 		RetryTemplate retryTemplate = new RetryTemplate();
 		retryTemplate.setBackOffPolicy(new StatelessBackOffPolicy() {
 			@Override
-			protected void doBackOff() throws BackOffInterruptedException {
+			protected void doGetBackOffInMillis() throws BackOffInterruptedException {
 				throw new BackOffInterruptedException("foo");
 			}
 		});
@@ -420,7 +420,7 @@ public class RetryTemplateTests {
 		}
 
 		@Override
-		public void backOff(BackOffContext backOffContext)
+		public void getBackOffInMillis(BackOffContext backOffContext)
 				throws BackOffInterruptedException {
 			this.backOffCalls++;
 		}

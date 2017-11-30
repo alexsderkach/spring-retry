@@ -78,13 +78,8 @@ public class FixedBackOffPolicy extends StatelessBackOffPolicy implements
 	 * Pause for the {@link #setBackOffPeriod(long)}.
 	 * @throws BackOffInterruptedException if interrupted during sleep.
 	 */
-	protected void doBackOff() throws BackOffInterruptedException {
-		try {
-			sleeper.sleep(backOffPeriod);
-		}
-		catch (InterruptedException e) {
-			throw new BackOffInterruptedException("Thread interrupted while sleeping", e);
-		}
+	protected long doGetBackOffInMillis() throws BackOffInterruptedException {
+		return backOffPeriod;
 	}
 
 	public String toString() {

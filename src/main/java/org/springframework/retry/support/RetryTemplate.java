@@ -16,23 +16,10 @@
 
 package org.springframework.retry.support;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
+import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import org.springframework.retry.ExhaustedRetryException;
-import org.springframework.retry.RecoveryCallback;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryException;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.RetryOperations;
-import org.springframework.retry.RetryPolicy;
-import org.springframework.retry.RetryState;
-import org.springframework.retry.TerminatedRetryException;
+import org.springframework.retry.*;
 import org.springframework.retry.backoff.BackOffContext;
 import org.springframework.retry.backoff.BackOffInterruptedException;
 import org.springframework.retry.backoff.BackOffPolicy;
@@ -40,6 +27,15 @@ import org.springframework.retry.backoff.NoBackOffPolicy;
 import org.springframework.retry.policy.MapRetryContextCache;
 import org.springframework.retry.policy.RetryContextCache;
 import org.springframework.retry.policy.SimpleRetryPolicy;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.retry.BackoffDelay;
+import reactor.retry.Retry;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Template class that simplifies the execution of operations with retry semantics.
@@ -303,7 +299,7 @@ public class RetryTemplate implements RetryOperations {
 
 					if (canRetry(retryPolicy, context) && !context.isExhaustedOnly()) {
 						try {
-							backOffPolicy.backOff(backOffContext);
+							backOffPolicy.getBackOffInMillis(backOffContext);
 						}
 						catch (BackOffInterruptedException ex) {
 							lastException = e;
@@ -361,6 +357,81 @@ public class RetryTemplate implements RetryOperations {
 		}
 
 	}
+
+
+    protected <T, E extends Throwable> T doExecuteReactive(MethodInvocation invocation,
+                                                           RetryCallback<T, E> retryCallback,
+                                                           RetryState state)
+            throws E, ExhaustedRetryException {
+
+        RetryPolicy retryPolicy = this.retryPolicy;
+        BackOffPolicy backOffPolicy = this.backOffPolicy;
+        RetryContext context = open(retryPolicy, state);
+        boolean running = doOpenInterceptors(retryCallback, context);
+        if (!running) {
+            throw new TerminatedRetryException(
+                    "Retry terminated abnormally by interceptor before first attempt");
+        }
+
+        // Get or Start the backoff context...
+        BackOffContext backOffContext = null;
+        Object resource = context.getAttribute("backOffContext");
+
+        if (resource instanceof BackOffContext) {
+            backOffContext = (BackOffContext) resource;
+        }
+
+        if (backOffContext == null) {
+            backOffContext = backOffPolicy.start(context);
+            if (backOffContext != null) {
+                context.setAttribute("backOffContext", backOffContext);
+            }
+        }
+
+        BackOffContext finalBackOffContext = backOffContext;
+
+        Retry<Object> retry = Retry
+                .onlyIf($ -> canRetry(retryPolicy, context) && !context.isExhaustedOnly() && !shouldRethrow(retryPolicy, context, state))
+                .doOnRetry(retryContext -> {
+                    Throwable e = retryContext.exception();
+                    try {
+                        registerThrowable(retryPolicy, state, context, e);
+                    } catch (Exception ex) {
+                        throw new TerminatedRetryException("Could not register throwable",
+                                ex);
+                    } finally {
+                        doOnErrorInterceptors(retryCallback, context, e);
+                    }
+                })
+                .backoff($ -> new BackoffDelay(Duration.ofMillis(backOffPolicy.getBackOffInMillis(finalBackOffContext))));
+
+        if (Flux.class.equals(invocation.getMethod().getReturnType())) {
+           return (T)((Flux) retryCallback.doWithRetry(context))
+                   .retryWhen(retry)
+                   .onErrorResume(e -> Flux.error(RetryTemplate.<E>wrapIfNecessary((Throwable) e)));
+        } else if (Mono.class.equals(invocation.getMethod().getReturnType())) {
+            return (T)((Mono) retryCallback.doWithRetry(context))
+                    .retryWhen(retry)
+                    .onErrorResume(e -> Mono.error(RetryTemplate.<E>wrapIfNecessary((Throwable) e)));
+        } else {
+            return (Mono.fromCallable(() -> {
+                try {
+                    return retryCallback.doWithRetry(context);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            }))
+                    .retryWhen(retry)
+                    .onErrorResume(e -> Mono.error(RetryTemplate.<E>wrapIfNecessary(e)))
+                    .block();
+        }
+    }
+
+
+
+
+
+
 
 	/**
 	 * Decide whether to proceed with the ongoing retry attempt. This method is called

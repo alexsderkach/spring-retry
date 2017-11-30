@@ -28,12 +28,12 @@ import org.springframework.retry.RetryContext;
 public abstract class StatelessBackOffPolicy implements BackOffPolicy {
 
 	/**
-	 * Delegates directly to the {@link #doBackOff()} method without passing on
+	 * Delegates directly to the {@link #doGetBackOffInMillis()} method without passing on
 	 * the {@link BackOffContext} argument which is not needed for stateless
 	 * implementations.
 	 */
-	public final void backOff(BackOffContext backOffContext) throws BackOffInterruptedException {
-		doBackOff();
+	public final long getBackOffInMillis(BackOffContext backOffContext) throws BackOffInterruptedException {
+		return doGetBackOffInMillis();
 	}
 
 	/**
@@ -47,5 +47,5 @@ public abstract class StatelessBackOffPolicy implements BackOffPolicy {
 	/**
 	 * Sub-classes should implement this method to perform the actual back off.
 	 */
-	protected abstract void doBackOff() throws BackOffInterruptedException;
+	protected abstract long doGetBackOffInMillis();
 }

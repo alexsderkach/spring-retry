@@ -34,7 +34,7 @@ public class FixedBackOffPolicyTests {
 		FixedBackOffPolicy strategy = new FixedBackOffPolicy();
 		strategy.setBackOffPeriod(-1000L);
 		strategy.setSleeper(sleeper);
-		strategy.backOff(null);
+		strategy.getBackOffInMillis(null);
 		// We should see a zero backoff if we try to set it negative
 		assertEquals(1, sleeper.getBackOffs().length);
 		assertEquals(1, sleeper.getLastBackOff());
@@ -46,7 +46,7 @@ public class FixedBackOffPolicyTests {
 		FixedBackOffPolicy strategy = new FixedBackOffPolicy();
 		strategy.setBackOffPeriod(backOffPeriod);
 		strategy.setSleeper(sleeper);
-		strategy.backOff(null);
+		strategy.getBackOffInMillis(null);
 		assertEquals(1, sleeper.getBackOffs().length);
 		assertEquals(backOffPeriod, sleeper.getLastBackOff());
 	}
@@ -58,7 +58,7 @@ public class FixedBackOffPolicyTests {
 		strategy.setBackOffPeriod(backOffPeriod);
 		strategy.setSleeper(sleeper);
 		for (int x = 0; x < 10; x++) {
-			strategy.backOff(null);
+			strategy.getBackOffInMillis(null);
 			assertEquals(backOffPeriod, sleeper.getLastBackOff());
 		}
 		assertEquals(10, sleeper.getBackOffs().length);

@@ -170,19 +170,14 @@ public class ExponentialBackOffPolicy
 	/**
 	 * Pause for a length of time equal to ' <code>exp(backOffContext.expSeed)</code>'.
 	 */
-	public void backOff(BackOffContext backOffContext)
+	public long getBackOffInMillis(BackOffContext backOffContext)
 			throws BackOffInterruptedException {
 		ExponentialBackOffContext context = (ExponentialBackOffContext) backOffContext;
-		try {
 			long sleepTime = context.getSleepAndIncrement();
 			if (logger.isDebugEnabled()) {
 				logger.debug("Sleeping for " + sleepTime);
 			}
-			sleeper.sleep(sleepTime);
-		}
-		catch (InterruptedException e) {
-			throw new BackOffInterruptedException("Thread interrupted while sleeping", e);
-		}
+			return sleepTime;
 	}
 
 	static class ExponentialBackOffContext implements BackOffContext {

@@ -105,14 +105,9 @@ public class UniformRandomBackOffPolicy extends StatelessBackOffPolicy implement
 	 * Pause for the {@link #setMinBackOffPeriod(long)}.
 	 * @throws BackOffInterruptedException if interrupted during sleep.
 	 */
-	protected void doBackOff() throws BackOffInterruptedException {
-		try {
-			long delta = maxBackOffPeriod==minBackOffPeriod ? 0 : random.nextInt((int) (maxBackOffPeriod - minBackOffPeriod));
-			sleeper.sleep(minBackOffPeriod + delta );
-		}
-		catch (InterruptedException e) {
-			throw new BackOffInterruptedException("Thread interrupted while sleeping", e);
-		}
+	protected long doGetBackOffInMillis() throws BackOffInterruptedException {
+		long delta = maxBackOffPeriod==minBackOffPeriod ? 0 : random.nextInt((int) (maxBackOffPeriod - minBackOffPeriod));
+		return minBackOffPeriod + delta;
 	}
 
     public String toString() {

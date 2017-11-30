@@ -26,7 +26,8 @@ package org.springframework.retry.backoff;
  */
 public class NoBackOffPolicy extends StatelessBackOffPolicy {
 
-	protected void doBackOff() throws BackOffInterruptedException {
+	protected long doGetBackOffInMillis() throws BackOffInterruptedException {
+		return 0L;
 	}
 
 	@Override
